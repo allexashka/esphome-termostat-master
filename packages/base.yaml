@@ -36,7 +36,7 @@ logger:
 
 external_components:
   - source: $vport_source
-    components: [crash_info, etl, otax, vport]
+    components: [crash_info, etl, otax, vport, rka_api, ets]
     refresh: $vport_source_refresh
 
   - source: $project_source
