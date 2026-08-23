@@ -49,18 +49,22 @@ struct ets_state_t {
   bool is_on() const { return state_ == 1; }
 
   float target_temp() const {
-    int16_t val = (target_temp_ >> 8) | (target_temp_ << 8);
-    return val * 0.1f;
+    uint16_t raw = *reinterpret_cast<const uint16_t*>(&target_temp_);
+    int16_t val = static_cast<int16_t>((raw >> 8) | (raw << 8));
+    return static_cast<float>(val) * 0.1f;
   }
 
   float air_temp() const {
-    int16_t val = (air_temp_ >> 8) | (air_temp_ << 8);
-    return val * 0.1f;
+    uint16_t raw = *reinterpret_cast<const uint16_t*>(&air_temp_);
+    int16_t val = static_cast<int16_t>((raw >> 8) | (raw << 8));
+    return static_cast<float>(val) * 0.1f;
   }
 
   float floor_temp() const {
-    int16_t val = (floor_temp_ >> 8) | (floor_temp_ << 8);
-    return val * 0.1f;
+    uint16_t raw = *reinterpret_cast<const uint16_t*>(&floor_temp_);
+    int16_t val = static_cast<int16_t>((raw >> 8) | (raw << 8));
+    return static_cast<float>(val) * 0.1f;
+  }
   }
 
   bool is_antifreeze() const { return antifreeze == 0x32; }
@@ -93,17 +97,18 @@ struct ets_mode_t {
   uint8_t unk10;                   // 19: Неизвестно / CRC
 
   void set_state(bool on) { this->state_ = on ? 0x01 : 0x00; }
-  void set_target_temp(float temp) {
-    int16_t val = static_cast<int16_t>(temp * 10.0f);
-    this->target_temp_ = (val >> 8) | (val << 8);
+  void set_target_temp(float value) {
+    int16_t val = static_cast<int16_t>(value * 10.0f);
+    uint16_t swapped = static_cast<uint16_t>((val >> 8) | (val << 8));
+    *reinterpret_cast<uint16_t*>(&target_temp_) = swapped;
   }
-  void set_air_temp(float temp) {
-    int16_t val = static_cast<int16_t>(temp * 10.0f);
-    this->air_temp_ = (val >> 8) | (val << 8);
+
+  void set_air_temp(float value) {
+    this->air_temp_ = static_cast<int16_t>(value * 10.0f);
   }
-  void set_floor_temp(float temp) {
-    int16_t val = static_cast<int16_t>(temp * 10.0f);
-    this->floor_temp_ = (val >> 8) | (val << 8);
+
+  void set_floor_temp(float value) {
+    this->floor_temp_ = static_cast<int16_t>(value * 10.0f);
   }
   void reset() {
     this->state_ = UNCHANGED;
