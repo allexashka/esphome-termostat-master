@@ -1,9 +1,9 @@
-# This file enbles additional clock sensor for your dongle.
+# This file enables additional clock sensor for your dongle.
 # Enable it via package include:
 # packages:
-#   clock: github://dentra/esphome-ewh/packages/ewh-clock.yaml@$project_branch
+#   clock: github://allexashka/esphome-termostat-master/packages/clock.yaml@master
 # or if you like from local filesystem:
-#   clock: !include packages/ewh-clock.yaml
+#   clock: !include packages/clock.yaml
 substitutions:
   time_platform: sntp
 
