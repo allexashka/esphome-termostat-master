@@ -86,8 +86,8 @@ struct ets_state_t {
 struct ets_mode_t {
   enum { UNCHANGED = 0x7F };
 
-  // Байт 0: всегда 0x00 (не используется, но должен быть в пакете)
-  uint8_t unused{0x00};
+  // Байт 0: всегда 0x00 (не используется)
+  uint8_t unused0{0x00};
   
   // Байт 1: состояние (7F=unchanged, 00=off, 01=on)
   uint8_t state_{UNCHANGED};
@@ -130,6 +130,9 @@ struct ets_mode_t {
   
   // Байт 19: блокировка (00=on, 01=off)
   uint8_t chld_lck{UNCHANGED};
+  
+  // Байт 20: второй запасной байт (всегда 0x7F)
+  uint8_t unused1{0x7F};
 
   // --- Методы ---
   void set_state(bool is_on) { state_ = is_on ? 1 : 0; }
@@ -153,7 +156,7 @@ struct ets_mode_t {
   void set_locked(bool on) { chld_lck = on ? 0x00 : 0x01; }
 
   void reset() {
-    unused = 0x00;
+    unused0 = 0x00;
     state_ = UNCHANGED;
     unk01 = UNCHANGED;
     ctl_type = UNCHANGED;
@@ -162,8 +165,12 @@ struct ets_mode_t {
     unk10 = UNCHANGED;
     open_wnd_mode = UNCHANGED;
     chld_lck = UNCHANGED;
+    unused1 = 0x7F;
   }
 };
+
+// Проверка размера
+static_assert(sizeof(ets_mode_t) == 21, "ets_mode_t must be exactly 21 bytes!");
 
 #pragma pack(pop)
 
