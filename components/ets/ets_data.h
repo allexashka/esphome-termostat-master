@@ -1,4 +1,5 @@
 #pragma once
+
 #include "../rka_api/rka_data.h"
 
 namespace esphome {
@@ -7,9 +8,9 @@ namespace ets {
 #pragma pack(push, 1)
 
 enum ets_ctl_type_t : uint8_t {
-  CT_FLOOR = 0,      // датчик пола
-  CT_AIR = 1,        // датчик воздуха
-  CT_FLOOR_AIR = 2,  // датчик пола и воздуха
+  CT_FLOOR = 0,      // Датчик пола
+  CT_AIR = 1,        // Датчик воздуха
+  CT_FLOOR_AIR = 2,  // Оба датчика
 };
 
 enum ets_sens_type_t : uint8_t {
@@ -22,152 +23,101 @@ enum ets_sens_type_t : uint8_t {
 };
 
 // ============================================================
-// Ответ состояния (команда 0x0A)
+// Ответ состояния (команда 0x0A / 0x88)
+// Длина данных: 20 байт (без учёта типа команды и CRC)
+// Формат: AA XX CMD [20 байт] CRC
 // ============================================================
 struct ets_state_t {
-  // Байт 0
-  uint8_t state_;          // 00=off, 01=on
-  
-  // Байт 1
-  uint8_t unk01{0x7F};     // всегда 0x7F
-  
-  // Байты 2-3
-  int16_t target_temp_;    // целевая (Big Endian, ×10)
-  
-  // Байты 4-5
-  int16_t air_temp_;       // воздух (Big Endian, ×10)
-  
-  // Байты 6-7
-  int16_t floor_temp_;     // пол (Big Endian, ×10)
-  
-  // Байты 8-9
-  uint16_t unk08{0};       // всегда 0x0000
-  
-  // Байт 10
-  uint8_t ctl_type{0x7F};  // тип управления (7F=unchanged)
-  
-  // Байт 11
-  ets_sens_type_t sens_type{ST_ELECTROLUX_10KOHM};
-  
-  // Байты 12-13
-  uint16_t unk0C{0x01C2};  // всегда 0x01C2
-  
-  // Байт 14
-  uint8_t unk0E{0};        // всегда 0x00
-  
-  // Байт 15
-  uint8_t antifreeze{0};   // 00=off, 32=on
-  
-  // Байт 16
-  uint8_t unk10{0x7F};     // всегда 0x7F
-  
-  // Байт 17
-  uint8_t open_wnd_mode{0}; // 00=off, 01=on
-  
-  // Байт 18
-  uint8_t chld_lck{0x7F};  // 00=on, 01=off
-  
-  // --- Методы ---
-  bool is_off() const { return state_ == 0; }
-  bool is_on() const { return state_ == 1; }
-  
-  float target_temp() const {
-    int16_t val = (target_temp_ >> 8) | (target_temp_ << 8);
+  enum { RSP_FRAME_TYPE = 0x0A };  // ETS отвечает командой 0x0A
+
+  uint8_t state_;                  // 0: 0x00=ВЫКЛ, 0x01=ВКЛ
+  uint8_t unk01;                   // 1: Всегда 0x7F
+  int16_t target_temp_;            // 2-3: Целевая температура ×10 (Big Endian)
+  int16_t air_temp_;               // 4-5: Температура воздуха ×10 (Big Endian)
+  int16_t floor_temp_;             // 6-7: Температура пола ×10 (Big Endian)
+  uint16_t unk08;                  // 8-9: Всегда 0x0000
+  uint8_t ctl_type;                // 10: Тип управления (0=Пол, 1=Воздух, 2=Оба)
+  ets_sens_type_t sens_type;       // 11: Тип датчика (02=Electrolux 10kΩ)
+  uint16_t unk0C;                  // 12-13: Всегда 0x01C2
+  uint8_t unk0E;                   // 14: Всегда 0x00
+  uint8_t antifreeze;              // 15: 0x00=ВЫКЛ, 0x32=ВКЛ
+  uint8_t brightness;              // 16: Всегда 0x7F
+  uint8_t open_wnd_mode;           // 17: 0x00=ВЫКЛ, 0x01=ВКЛ
+  uint8_t chld_lck;                // 18: 0x00=ВКЛ, 0x01=ВЫКЛ
+  uint8_t crc_;                    // 19: CRC (сумма всех байт пакета)
+
+  static_assert(sizeof(ets_state_t) == 20, "ets_state_t must be exactly 20 bytes!");
+
+  bool is_on() const { return this->state_ == 0x01; }
+  bool is_off() const { return this->state_ == 0x00; }
+
+  float get_target_temp() const {
+    int16_t val = (this->target_temp_ >> 8) | (this->target_temp_ << 8);
     return val * 0.1f;
   }
-  float air_temp() const {
-    int16_t val = (air_temp_ >> 8) | (air_temp_ << 8);
+
+  float get_air_temp() const {
+    int16_t val = (this->air_temp_ >> 8) | (this->air_temp_ << 8);
     return val * 0.1f;
   }
-  float floor_temp() const {
-    int16_t val = (floor_temp_ >> 8) | (floor_temp_ << 8);
+
+  float get_floor_temp() const {
+    int16_t val = (this->floor_temp_ >> 8) | (this->floor_temp_ << 8);
     return val * 0.1f;
   }
-  
-  bool is_antifreeze() const { return antifreeze == 0x32; }
-  bool is_window_open() const { return open_wnd_mode == 0x01; }
-  bool is_locked() const { return chld_lck == 0x00; }
+
+  bool is_antifreeze() const { return this->antifreeze == 0x32; }
+  bool is_window_open() const { return this->open_wnd_mode == 0x01; }
+  bool is_locked() const { return this->chld_lck == 0x00; }
 };
 
 // ============================================================
-// Команда изменения (команда 0x0A для отправки)
+// Команда изменения режима (отправка на термостат)
+// Длина данных: 20 байт
 // ============================================================
 struct ets_mode_t {
-  enum { UNCHANGED = 0x7F };
-  
-  // Байт 0
-  uint8_t state_{UNCHANGED};  // 7F=unchanged, 00=off, 01=on
-  
-  // Байт 1
-  uint8_t unk01{UNCHANGED};   // всегда 0x7F
-  
-  // Байты 2-3
-  int16_t target_temp_;       // целевая (Big Endian, ×10)
-  
-  // Байты 4-5
-  int16_t air_temp_;          // воздух (Big Endian, ×10)
-  
-  // Байты 6-7
-  int16_t floor_temp_;        // пол (Big Endian, ×10)
-  
-  // Байты 8-9
-  uint16_t unk08{0};          // всегда 0x0000
-  
-  // Байт 10
-  uint8_t ctl_type{UNCHANGED};
-  
-  // Байт 11
-  uint8_t sens_type{UNCHANGED};
-  
-  // Байты 12-13
-  uint16_t unk0C{0x01C2};     // всегда 0x01C2
-  
-  // Байт 14
-  uint8_t unk0E{0};           // всегда 0x00
-  
-  // Байт 15
-  uint8_t antifreeze{UNCHANGED};  // 32=on, 00=off
-  
-  // Байт 16
-  uint8_t unk10{UNCHANGED};   // всегда 0x7F
-  
-  // Байт 17
-  uint8_t open_wnd_mode{UNCHANGED};  // 00=off, 01=on
-  
-  // Байт 18
-  uint8_t chld_lck{UNCHANGED};  // 00=on, 01=off
-  
-  // --- Методы ---
-  void set_state(bool is_on) { state_ = is_on ? 1 : 0; }
-  void set_unchanged_state() { state_ = UNCHANGED; }
-  
-  void set_target_temp(float value) {
-    int16_t val = (int16_t)(value * 10);
-    target_temp_ = (val >> 8) | (val << 8);
+  enum { REQ_FRAME_TYPE = 0x0A };
+  enum : uint8_t { UNCHANGED = 0x7F };
+
+  uint8_t state_;                  // 0: 0x7F=не менять, 0x00=ВЫКЛ, 0x01=ВКЛ
+  uint8_t unk01;                   // 1: Всегда 0x7F
+  int16_t target_temp_;            // 2-3: Целевая температура ×10 (Big Endian)
+  int16_t air_temp_;               // 4-5: Температура воздуха ×10 (Big Endian)
+  int16_t floor_temp_;             // 6-7: Температура пола ×10 (Big Endian)
+  uint16_t unk08;                  // 8-9: Всегда 0x0000
+  uint8_t ctl_type;                // 10: 0x7F=не менять
+  uint8_t sens_type;               // 11: 0x7F=не менять
+  uint16_t unk0C;                  // 12-13: Всегда 0x01C2
+  uint8_t unk0E;                   // 14: Всегда 0x00
+  uint8_t antifreeze;              // 15: 0x7F=не менять, 0x32=ВКЛ, 0x00=ВЫКЛ
+  uint8_t brightness;              // 16: 0x7F=не менять
+  uint8_t open_wnd_mode;           // 17: 0x7F=не менять, 0x00=ВЫКЛ, 0x01=ВКЛ
+  uint8_t chld_lck;                // 18: 0x7F=не менять, 0x00=ВКЛ, 0x01=ВЫКЛ
+  uint8_t crc_;                    // 19: CRC (вычисляется автоматически)
+
+  static_assert(sizeof(ets_mode_t) == 20, "ets_mode_t must be exactly 20 bytes!");
+
+  void set_state(bool on) { this->state_ = on ? 0x01 : 0x00; }
+  void set_target_temp(float temp) {
+    int16_t val = static_cast<int16_t>(temp * 10.0f);
+    this->target_temp_ = (val >> 8) | (val << 8);
   }
-  void set_air_temp(float value) {
-    int16_t val = (int16_t)(value * 10);
-    air_temp_ = (val >> 8) | (val << 8);
-  }
-  void set_floor_temp(float value) {
-    int16_t val = (int16_t)(value * 10);
-    floor_temp_ = (val >> 8) | (val << 8);
-  }
-  
-  void set_antifreeze(bool on) { antifreeze = on ? 0x32 : 0x00; }
-  void set_window_open(bool on) { open_wnd_mode = on ? 0x01 : 0x00; }
-  void set_locked(bool on) { chld_lck = on ? 0x00 : 0x01; }
-  
-  // Сброс всех параметров в UNCHANGED
   void reset() {
-    state_ = UNCHANGED;
-    unk01 = UNCHANGED;
-    ctl_type = UNCHANGED;
-    sens_type = UNCHANGED;
-    antifreeze = UNCHANGED;
-    unk10 = UNCHANGED;
-    open_wnd_mode = UNCHANGED;
-    chld_lck = UNCHANGED;
+    this->state_ = UNCHANGED;
+    this->unk01 = UNCHANGED;
+    this->target_temp_ = 0;
+    this->air_temp_ = 0;
+    this->floor_temp_ = 0;
+    this->unk08 = 0;
+    this->ctl_type = UNCHANGED;
+    this->sens_type = UNCHANGED;
+    this->unk0C = 0x01C2;
+    this->unk0E = 0x00;
+    this->antifreeze = UNCHANGED;
+    this->brightness = UNCHANGED;
+    this->open_wnd_mode = UNCHANGED;
+    this->chld_lck = UNCHANGED;
+    this->crc_ = 0;
   }
 };
 
