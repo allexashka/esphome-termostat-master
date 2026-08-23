@@ -1,143 +1,94 @@
 #pragma once
 
-#include "../rka_api/rka_data.h"
+#include <cstdint>
+#include <cstddef>
 
 namespace esphome {
-namespace ets {
+namespace rka_api {
 
 #pragma pack(push, 1)
 
-enum ets_ctl_type_t : uint8_t {
-  CT_FLOOR = 0,
-  CT_AIR = 1,
-  CT_FLOOR_AIR = 2,
+enum rka_packet_type_t : uint8_t {
+  /** Device type request. */
+  PACKET_REQ_DEV_TYPE = 0x01,
+  /** Request to save rka_data structure. */
+  PACKET_REQ_SAVE_DATA = 0x06,
+  /** Request to load previously saved rka_data structure. */
+  PACKET_REQ_LOAD_DATA = 0x07,
+  /** Request device state. */
+  PACKET_REQ_STATE = 0x08,
+  /**
+   * Request change device state.
+   * First byte is operation, other one of following struct:
+   * ewh_mode_t, ewh_clock_t, ewh_timer_t, ewh_bst_t
+   */
+  PACKET_REQ_SET_COMMAND = 0x0A,
+
+  _PACKET_RSP_CMD_MASK = 0x80,
+
+  /** Result of PACKET_REQ_DEV_TYPE. @returns rka_dev_type_t */
+  PACKET_RSP_DEV_TYPE = _PACKET_RSP_CMD_MASK | PACKET_REQ_DEV_TYPE,
+  /** Result of PACKET_REQ_SAVE_DATA. @returns rka_result_t */
+  PACKET_RSP_SAVE_DATA = _PACKET_RSP_CMD_MASK | PACKET_REQ_SAVE_DATA,
+  /** Result of PACKET_REQ_LOAD_DATA. @returns rka_data_t */
+  PACKET_RSP_LOAD_DATA = _PACKET_RSP_CMD_MASK | PACKET_REQ_LOAD_DATA,
+  /** Result of PACKET_REQ_STATE. @returns rka_state_t */
+  PACKET_RSP_STATE = _PACKET_RSP_CMD_MASK | PACKET_REQ_STATE,  // 0x88
+  /** Result of PACKET_REQ_SET_COMMAND. */
+  PACKET_RSP_SET_COMMAND = _PACKET_RSP_CMD_MASK | PACKET_REQ_SET_COMMAND,  // 0x8A
+
+  /** Device state command. EWH got it every 30 seconds. @returns rka_state_t */
+  PACKET_CMD_STATE = 0x09,
+  /** Error executing previous command. @returns rka_error_t */
+  PACKET_CMD_ERROR = 0x05,
+
+  // ============================================================
+  // ДОБАВЛЕНО для ETS термостата
+  // ============================================================
+  /**
+   * Result of PACKET_REQ_STATE for ETS.
+   * ETS термостат отвечает на запрос состояния командой 0x0A.
+   */
+  PACKET_RSP_STATE_ETS = 0x0A,
 };
 
-enum ets_sens_type_t : uint8_t {
-  ST_CALEO_5KOHM = 0,
-  ST_TEPLOLUX_6_8KOHM = 1,
-  ST_ELECTROLUX_10KOHM = 2,
-  ST_RAYCHEM_13KOHM = 3,
-  ST_DEVI_15KOHM = 4,
-  ST_EBERIE_33KOHM = 5,
+// Response for PACKET_CMD_ERROR.
+struct rka_error_t {
+  enum { RSP_FRAME_TYPE = PACKET_CMD_ERROR };
+  enum Code : uint8_t { CODE_BAD_CRC = 1, CODE_BAD_COMMAND = 2 } code;
 };
 
-// ============================================================
-// Ответ состояния (команда 0x0A)
-// Длина данных: 20 байт
-// ============================================================
-struct ets_state_t {
-  enum { RSP_FRAME_TYPE = 0x0A };
-
-  uint8_t state_;                  // 0: 0x00=ВЫКЛ, 0x01=ВКЛ
-  uint8_t unk01;                   // 1: Всегда 0x7F
-  int16_t target_temp_;            // 2-3: Целевая температура ×10 (Big Endian)
-  int16_t air_temp_;               // 4-5: Температура воздуха ×10 (Big Endian)
-  int16_t floor_temp_;             // 6-7: Температура пола ×10 (Big Endian)
-  uint16_t unk08;                  // 8-9: Всегда 0x0000
-  uint8_t ctl_type;                // 10: Тип управления
-  ets_sens_type_t sens_type;       // 11: Тип датчика
-  uint16_t unk0C;                  // 12-13: Всегда 0x01C2
-  uint8_t unk0E;                   // 14: Всегда 0x00
-  uint8_t antifreeze;              // 15: 0x00=ВЫКЛ, 0x32=ВКЛ
-  uint8_t brightness;              // 16: Всегда 0x7F
-  uint8_t open_wnd_mode;           // 17: 0x00=ВЫКЛ, 0x01=ВКЛ
-  uint8_t chld_lck;                // 18: 0x00=ВКЛ, 0x01=ВЫКЛ
-  uint8_t unk10;                   // 19: Неизвестно / CRC
-
-  bool is_off() const { return state_ == 0; }
-  bool is_on() const { return state_ == 1; }
-
-  float target_temp() const {
-    int16_t val = (target_temp_ >> 8) | (target_temp_ << 8);
-    return val * 0.1f;
-  }
-
-  float air_temp() const {
-    int16_t val = (air_temp_ >> 8) | (air_temp_ << 8);
-    return val * 0.1f;
-  }
-
-  float floor_temp() const {
-    int16_t val = (floor_temp_ >> 8) | (floor_temp_ << 8);
-    return val * 0.1f;
-  }
-
-  bool is_antifreeze() const { return antifreeze == 0x32; }
-  bool is_window_open() const { return open_wnd_mode == 0x01; }
-  bool is_locked() const { return chld_lck == 0x00; }
+// Response for PACKET_RSP_DEV_TYPE.
+struct rka_dev_type_t {
+  enum { RSP_FRAME_TYPE = PACKET_RSP_DEV_TYPE };
+  uint32_t unknown;  // always 0
+  enum : uint16_t { EWH = 0x1100, BWH = 0x0400, ETS = 0x0501, EHU = 0x0700 } type;
 };
 
-// ============================================================
-// Команда изменения (команда 0x0A для отправки)
-// Длина данных: 20 байт
-// ============================================================
-struct ets_mode_t {
-  enum { REQ_FRAME_TYPE = 0x0A };
-  enum : uint8_t { UNCHANGED = 0x7F };
+// Response for PACKET_REQ_SAVE_DATA.
+struct rka_result_t {
+  enum { RSP_FRAME_TYPE = PACKET_RSP_SAVE_DATA };
+  enum : uint8_t { RESULT_OK = 1 };
+  uint8_t result;
+};
 
-  uint8_t state_;                  // 0: 0x7F=не менять, 0x00=ВЫКЛ, 0x01=ВКЛ
-  uint8_t unk01;                   // 1: Всегда 0x7F
-  int16_t target_temp_;            // 2-3: Целевая температура ×10 (Big Endian)
-  int16_t air_temp_;               // 4-5: Температура воздуха ×10 (Big Endian)
-  int16_t floor_temp_;             // 6-7: Температура пола ×10 (Big Endian)
-  uint16_t unk08;                  // 8-9: Всегда 0x0000
-  uint8_t ctl_type;                // 10: 0x7F=не менять
-  uint8_t sens_type;               // 11: 0x7F=не менять
-  uint16_t unk0C;                  // 12-13: Всегда 0x01C2
-  uint8_t unk0E;                   // 14: Всегда 0x00
-  uint8_t antifreeze;              // 15: 0x7F=не менять, 0x32=ВКЛ, 0x00=ВЫКЛ
-  uint8_t brightness;              // 16: 0x7F=не менять
-  uint8_t open_wnd_mode;           // 17: 0x7F=не менять, 0x00=ВЫКЛ, 0x01=ВКЛ
-  uint8_t chld_lck;                // 18: 0x7F=не менять, 0x00=ВКЛ, 0x01=ВЫКЛ
-  uint8_t unk10;                   // 19: Неизвестно / CRC
-
-  void set_state(bool is_on) { state_ = is_on ? 1 : 0; }
-  void set_unchanged_state() { state_ = UNCHANGED; }
-
-  void set_target_temp(float value) {
-    int16_t val = static_cast<int16_t>(value * 10);
-    target_temp_ = (val >> 8) | (val << 8);
-  }
-
-  void set_air_temp(float value) {
-    int16_t val = static_cast<int16_t>(value * 10);
-    air_temp_ = (val >> 8) | (val << 8);
-  }
-
-  void set_floor_temp(float value) {
-    int16_t val = static_cast<int16_t>(value * 10);
-    floor_temp_ = (val >> 8) | (val << 8);
-  }
-
-  void set_antifreeze(bool on) { antifreeze = on ? 0x32 : 0x00; }
-  void set_window_open(bool on) { open_wnd_mode = on ? 0x01 : 0x00; }
-  void set_locked(bool on) { chld_lck = on ? 0x00 : 0x01; }
-
-  void reset() {
-    state_ = UNCHANGED;
-    unk01 = UNCHANGED;
-    target_temp_ = 0;
-    air_temp_ = 0;
-    floor_temp_ = 0;
-    unk08 = 0;
-    ctl_type = UNCHANGED;
-    sens_type = UNCHANGED;
-    unk0C = 0x01C2;
-    unk0E = 0x00;
-    antifreeze = UNCHANGED;
-    brightness = UNCHANGED;
-    open_wnd_mode = UNCHANGED;
-    chld_lck = UNCHANGED;
-    unk10 = 0;
-  }
+// Response for PACKET_RSP_LOAD_DATA and request for PACKET_REQ_SAVE_DATA.
+struct rka_data_t {
+  enum {
+    RSP_FRAME_TYPE = PACKET_RSP_LOAD_DATA,
+    REQ_FRAME_TYPE = PACKET_REQ_SAVE_DATA,
+  };
+  uint8_t data[16];
 };
 
 #pragma pack(pop)
 
-// Проверки размера ВЫНЕСЕНЫ за пределы структур
-static_assert(sizeof(ets_state_t) == 20, "ets_state_t must be exactly 20 bytes!");
-static_assert(sizeof(ets_mode_t) == 20, "ets_mode_t must be exactly 20 bytes!");
+// Размер буфера UART для приёма кадров.
+// Увеличено с 16 (sizeof(rka_data_t)) до 32 для поддержки
+// пакетов ETS термостата длиной 21 байт.
+struct rka_max_data_size_t {
+  static constexpr size_t value = 32;
+};
 
-}  // namespace ets
+}  // namespace rka_api
 }  // namespace esphome
