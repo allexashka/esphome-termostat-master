@@ -128,8 +128,12 @@ struct rka_data_t {
 
 #pragma pack(pop)
 
+#struct rka_max_data_size_t {
+#  static constexpr auto value = sizeof(esphome::rka_api::rka_data_t);
+#};
 struct rka_max_data_size_t {
-  static constexpr auto value = sizeof(esphome::rka_api::rka_data_t);
+  // Увеличено с sizeof(rka_data_t)=16 до 32 для поддержки ETS (21 байт + запас)
+  static constexpr size_t value = 32;
 };
 
 }  // namespace rka_api

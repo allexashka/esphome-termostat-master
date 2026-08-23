@@ -1,16 +1,6 @@
 substitutions:
   project_branch: master
   project_version: 2025-master
-  
-  # Ваш репозиторий (содержит модифицированные rka_api и ets)
-  project_source: github://allexashka/esphome-termostat-master@$project_branch
-  project_source_refresh: 600s
-  
-  # Оригинальный репозиторий dentra (содержит vport и базовые утилиты)
-  vport_version: "master"
-  vport_source: github://dentra/esphome-components@$vport_version
-  vport_source_refresh: 1d
-  
   node_name: "#"
   friendly_name: $node_name
   node_add_mac_suffix: "false"
@@ -40,14 +30,14 @@ logger:
   baud_rate: 0
 
 external_components:
-  # 1. Базовые компоненты от dentra (vport обязателен как зависимость для ets)
-  # rka_api здесь НЕ указываем, так как его нет в этом репозитории
-  - source: $vport_source
+  # 1. Базовые компоненты от dentra (vport обязателен)
+  - source: github://dentra/esphome-components@master
     components: [crash_info, etl, otax, vport]
-    refresh: $vport_source_refresh
+    refresh: 1d
 
-  # 2. Ваши модифицированные компоненты (rka_api и ets)
-  # vport здесь НЕ указываем, он уже загружен выше из dentra
-  - source: $project_source
+  # 2. Ваши локальные компоненты (rka_api и ets)
+  # Путь относительно корня конфигурации ESPHome
+  - source:
+      type: local
+      path: packages/ets_termostat/components
     components: [rka_api, ets]
-    refresh: $project_source_refresh
