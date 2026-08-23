@@ -1,12 +1,11 @@
 # This package enables additional sensors showed in web interface.
 # Requires to be included after ewh.yaml
 # packages:
-#   web: github://dentra/esphome-ewh/packages/ewh-web.yaml@$project_branch
+#   web: github://allexashka/esphome-termostat-master/packages/ewh_web.yaml@master
 # or if you like from local filesystem:
-#   web: !include packages/web.yaml
+#   web: !include packages/ewh_web.yaml
 
 web_server:
-  # show internal sensors in UI
   include_internal: true
 
 switch:
@@ -27,7 +26,6 @@ switch:
         cc.perform();
 
 sensor:
-  # Add Current Temperature as sensor as internal sensor to show in web server UI
   - platform: template
     id: wh_current_temp
     internal: true
@@ -124,7 +122,6 @@ select:
 ewh:
   on_state:
     then:
-      # faster update web ui
       - lambda: |-
           id(wh_current_temp).publish_state(state.current_temperature);
           id(wh_target_temp).publish_state(state.target_temperature);

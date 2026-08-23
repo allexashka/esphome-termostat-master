@@ -15,7 +15,9 @@ void ETSClimate::dump_config() {
 ClimateTraits ETSClimate::traits() {
   auto traits = climate::ClimateTraits();
 
-  traits.set_supports_current_temperature(true);
+  // set_supports_current_temperature устарел в новых версиях
+  // traits.set_supports_current_temperature(true);
+
   traits.set_visual_min_temperature(5.0f);
   traits.set_visual_max_temperature(45.0f);
   traits.set_visual_temperature_step(0.1f);
@@ -45,7 +47,8 @@ void ETSClimate::on_state(const ets_state_t &state) {
   this->api_->init_unk0C(state.unk0C);
 
   this->target_temperature = state.target_temp();
-  this->current_temperature = state.air_temp();
+  // Используем температуру пола как текущую (воздух не используется)
+  this->current_temperature = state.floor_temp();  // ← ИСПРАВЛЕНО
   this->mode = state.is_off() ? climate::CLIMATE_MODE_OFF : climate::CLIMATE_MODE_HEAT;
   this->publish_state();
 

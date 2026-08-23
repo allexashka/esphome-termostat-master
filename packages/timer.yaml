@@ -1,9 +1,9 @@
-# This file enbles additional timer sensor for your dongle.
+# This file enables additional timer sensor for your dongle.
 # Enable it via package include:
 # packages:
-#   timer: github://dentra/esphome-ewh/ewh-pkg-timer.yaml@$project_branch
+#   timer: github://allexashka/esphome-termostat-master/packages/timer.yaml@master
 # or if you like from local filesystem:
-#   timer: !include ewh-pkg-timer.yaml
+#   timer: !include packages/timer.yaml
 substitutions:
   time_platform: sntp
 
