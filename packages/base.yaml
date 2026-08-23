@@ -2,15 +2,15 @@ substitutions:
   project_branch: master
   project_version: 2025-master
   project_source: github://allexashka/esphome-termostat-master@$project_branch
-  project_source_refresh: 12h
+  project_source_refresh: 600s
   node_name: "#"
   friendly_name: $node_name
   node_add_mac_suffix: "false"
-  
-  vport_version: "master" #2023.2.0
+
+  vport_version: "master"
   vport_source: github://dentra/esphome-components@$vport_version
   vport_source_refresh: 1d
-  
+
 esphome:
   name: $node_name
   friendly_name: $friendly_name
@@ -26,6 +26,7 @@ preferences:
 
 wifi:
   ap:
+
 captive_portal:
 
 ota:
@@ -35,9 +36,12 @@ logger:
   baud_rate: 0
 
 external_components:
+  # Компоненты от dentra (без rka_api и ets)
   - source: $vport_source
-    components: [crash_info, etl, otax, vport, rka_api, ets]
+    components: [crash_info, etl, otax, vport]
     refresh: $vport_source_refresh
 
+  # Компоненты от allexashka (rka_api и ets)
   - source: $project_source
+    components: [rka_api, ets]
     refresh: $project_source_refresh
