@@ -15,9 +15,6 @@ void ETSClimate::dump_config() {
 ClimateTraits ETSClimate::traits() {
   auto traits = climate::ClimateTraits();
 
-  // ⚠️ Удалено: set_supports_current_temperature больше не существует в ESPHome 2026.8.0
-  // traits.set_supports_current_temperature(true);
-
   traits.set_visual_min_temperature(5.0f);
   traits.set_visual_max_temperature(45.0f);
   traits.set_visual_temperature_step(0.1f);
@@ -44,32 +41,43 @@ void ETSClimate::control(const ClimateCall &call) {
 }
 
 void ETSClimate::on_state(const ets_state_t &state) {
-  ESP_LOGI(TAG, "=== on_state called ===");
-  ESP_LOGI(TAG, "  state_: 0x%02X", state.state_);
-  ESP_LOGI(TAG, "  unk01: 0x%02X", state.unk01);
-  ESP_LOGI(TAG, "  target_temp_: 0x%04X", state.target_temp_);
-  ESP_LOGI(TAG, "  air_temp_: 0x%04X", state.air_temp_);
-  ESP_LOGI(TAG, "  floor_temp_: 0x%04X", state.floor_temp_);
-  ESP_LOGI(TAG, "  unk08: 0x%04X", state.unk08);
-  ESP_LOGI(TAG, "  ctl_type: 0x%02X", state.ctl_type);
-  ESP_LOGI(TAG, "  sens_type: 0x%02X", state.sens_type);
-  ESP_LOGI(TAG, "  unk0C: 0x%04X", state.unk0C);
-  ESP_LOGI(TAG, "  unk0E: 0x%02X", state.unk0E);
-  ESP_LOGI(TAG, "  antifreeze: 0x%02X", state.antifreeze);
-  ESP_LOGI(TAG, "  unk10: 0x%02X", state.unk10);
-  ESP_LOGI(TAG, "  open_wnd_mode: 0x%02X", state.open_wnd_mode);
-  ESP_LOGI(TAG, "  chld_lck: 0x%02X", state.chld_lck);
-
   // Инициализируем unk0C
   this->api_->init_unk0C(state.unk0C);
 
-  this->target_temperature = state.target_temp();
-  this->current_temperature = state.floor_temp();
+  // ============================================================
+  // ИСПРАВЛЕНО: ручная конвертация Big Endian
+  // ============================================================
+  // target_temp_ хранится в Big Endian: [старший байт][младший байт]
+  // Пример: 0x00D2 → 210 → 21.0°C
+  auto convert_temp = [](int16_t value) -> float {
+    uint16_t raw = (uint16_t)value;
+    uint16_t swapped = (raw >> 8) | (raw << 8);
+    return swapped * 0.1f;
+  };
+
+  float target_temp = convert_temp(state.target_temp_);
+  float floor_temp = convert_temp(state.floor_temp_);
+  float air_temp = convert_temp(state.air_temp_);
+
+  // Отладка
+  ESP_LOGI(TAG, "=== on_state called ===");
+  ESP_LOGI(TAG, "  state_: 0x%02X (ВКЛ=%d)", state.state_, state.is_on());
+  ESP_LOGI(TAG, "  target_temp_: raw=0x%04X → %.1f°C", (uint16_t)state.target_temp_, target_temp);
+  ESP_LOGI(TAG, "  air_temp_: raw=0x%04X → %.1f°C", (uint16_t)state.air_temp_, air_temp);
+  ESP_LOGI(TAG, "  floor_temp_: raw=0x%04X → %.1f°C", (uint16_t)state.floor_temp_, floor_temp);
+  ESP_LOGI(TAG, "  unk0C: 0x%04X", state.unk0C);
+  ESP_LOGI(TAG, "  antifreeze: 0x%02X %s", state.antifreeze, state.is_antifreeze() ? "ВКЛ" : "ВЫКЛ");
+  ESP_LOGI(TAG, "  open_wnd_mode: 0x%02X %s", state.open_wnd_mode, state.is_window_open() ? "ВКЛ" : "ВЫКЛ");
+  ESP_LOGI(TAG, "  chld_lck: 0x%02X %s", state.chld_lck, state.is_locked() ? "ВКЛ" : "ВЫКЛ");
+
+  // Обновляем климат
+  this->target_temperature = target_temp;
+  this->current_temperature = floor_temp;  // используем температуру пола как текущую
   this->mode = state.is_off() ? climate::CLIMATE_MODE_OFF : climate::CLIMATE_MODE_HEAT;
   this->publish_state();
 
+  // Обновляем сенсор температуры пола
   if (this->floor_temp_) {
-    float floor_temp = state.floor_temp();
     if (floor_temp > -10.0f) {
       this->floor_temp_->publish_state(floor_temp);
     }
