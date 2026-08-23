@@ -35,9 +35,10 @@ logger:
   baud_rate: 0
 
 external_components:
-  - source: $vport_source
-    components: [crash_info, etl, otax, vport]
-    refresh: $vport_source_refresh
+  # Удалены компоненты, которых нет в вашем репозитории
+  # - source: $vport_source
+  #   components: [crash_info, etl, otax, vport]
+  #   refresh: $vport_source_refresh
 
   - source: $project_source
     refresh: $project_source_refresh
