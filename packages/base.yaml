@@ -32,5 +32,5 @@ logger:
 
 external_components:
   - source: $project_source
-    components: [rka_api, ets]   # ← добавлен ets
+    components: [vport, rka_api, ets]
     refresh: $project_source_refresh
