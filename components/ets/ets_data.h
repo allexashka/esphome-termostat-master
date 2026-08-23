@@ -8,9 +8,9 @@ namespace ets {
 #pragma pack(push, 1)
 
 enum ets_ctl_type_t : uint8_t {
-  CT_FLOOR = 0,      // датчик пола
-  CT_AIR = 1,        // датчик воздуха
-  CT_FLOOR_AIR = 2,  // датчик пола и воздуха
+  CT_FLOOR = 0,
+  CT_AIR = 1,
+  CT_FLOOR_AIR = 2,
 };
 
 enum ets_sens_type_t : uint8_t {
@@ -23,11 +23,11 @@ enum ets_sens_type_t : uint8_t {
 };
 
 // ============================================================
-// Ответ состояния (команда 0x0A / 0x88)
+// Ответ состояния (команда 0x0A)
 // Длина данных: 20 байт
 // ============================================================
 struct ets_state_t {
-  enum { RSP_FRAME_TYPE = 0x0A }; // ETS отвечает командой 0x0A
+  enum { RSP_FRAME_TYPE = 0x0A };
 
   uint8_t state_;                  // 0: 0x00=ВЫКЛ, 0x01=ВКЛ
   uint8_t unk01;                   // 1: Всегда 0x7F
@@ -44,8 +44,6 @@ struct ets_state_t {
   uint8_t open_wnd_mode;           // 17: 0x00=ВЫКЛ, 0x01=ВКЛ
   uint8_t chld_lck;                // 18: 0x00=ВКЛ, 0x01=ВЫКЛ
   uint8_t unk10;                   // 19: Неизвестно / CRC
-
-  static_assert(sizeof(ets_state_t) == 20, "ets_state_t must be exactly 20 bytes!");
 
   bool is_off() const { return state_ == 0; }
   bool is_on() const { return state_ == 1; }
@@ -94,8 +92,6 @@ struct ets_mode_t {
   uint8_t chld_lck;                // 18: 0x7F=не менять, 0x00=ВКЛ, 0x01=ВЫКЛ
   uint8_t unk10;                   // 19: Неизвестно / CRC
 
-  static_assert(sizeof(ets_mode_t) == 20, "ets_mode_t must be exactly 20 bytes!");
-
   void set_state(bool on) { this->state_ = on ? 0x01 : 0x00; }
   void set_target_temp(float temp) {
     int16_t val = static_cast<int16_t>(temp * 10.0f);
@@ -129,6 +125,10 @@ struct ets_mode_t {
 };
 
 #pragma pack(pop)
+
+// Проверки размера ВЫНЕСЕНЫ за пределы структур
+static_assert(sizeof(ets_state_t) == 20, "ets_state_t must be exactly 20 bytes!");
+static_assert(sizeof(ets_mode_t) == 20, "ets_mode_t must be exactly 20 bytes!");
 
 }  // namespace ets
 }  // namespace esphome
