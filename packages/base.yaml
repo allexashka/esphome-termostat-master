@@ -1,8 +1,15 @@
 substitutions:
   project_branch: master
   project_version: 2025-master
+  
+  # Ваш репозиторий (только ets и rka_api)
   project_source: github://allexashka/esphome-termostat-master@$project_branch
   project_source_refresh: 600s
+  
+  # Репозиторий dentra (только vport и базовые утилиты)
+  vport_version: "master"
+  vport_source: github://dentra/esphome-components@$vport_version
+  vport_source_refresh: 1d
   
   node_name: "#"
   friendly_name: $node_name
@@ -33,8 +40,13 @@ logger:
   baud_rate: 0
 
 external_components:
-  # vport НЕ указан, так как он является частью ets (лежит в ets/vport/)
-  # rka_api и ets загружаются из вашего репозитория
+  # 1. Базовые компоненты от dentra (vport обязателен для работы ets)
+  - source: $vport_source
+    components: [crash_info, etl, otax, vport]
+    refresh: $vport_source_refresh
+
+  # 2. Ваши модифицированные компоненты (rka_api и ets)
+  # vport здесь НЕ указываем, он уже загружен выше
   - source: $project_source
     components: [rka_api, ets]
     refresh: $project_source_refresh
