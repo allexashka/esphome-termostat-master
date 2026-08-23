@@ -7,10 +7,6 @@ substitutions:
   friendly_name: $node_name
   node_add_mac_suffix: "true"
 
-  vport_version: "master"
-  vport_source: github://allexashka/esphome-termostat-master@$vport_version
-  vport_source_refresh: 1d
-
 esphome:
   name: $node_name
   friendly_name: $friendly_name
@@ -35,10 +31,6 @@ logger:
   baud_rate: 0
 
 external_components:
-  # Удалены компоненты, которых нет в вашем репозитории
-  # - source: $vport_source
-  #   components: [crash_info, etl, otax, vport]
-  #   refresh: $vport_source_refresh
-
   - source: $project_source
+    components: [vport, rka_api, ets, crash_info, etl, otax]
     refresh: $project_source_refresh
