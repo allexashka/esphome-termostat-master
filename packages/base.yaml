@@ -32,5 +32,5 @@ logger:
 
 external_components:
   - source: $project_source
-    components: [ets, rka_api]
+    components: [rka_api, ets]   # ← только rka_api и ets
     refresh: $project_source_refresh
