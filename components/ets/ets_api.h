@@ -7,16 +7,12 @@
 namespace esphome {
 namespace ets {
 
+// ETSListener теперь ничего не переопределяет,
+// так как rka_api::RKAListener уже обрабатывает 0x0A
 class ETSListener : public rka_api::RKAListener<ets_state_t> {
  public:
-  void on_frame(const rka_api::rka_any_frame_t &frame, size_t size) override {
-    // Ваш термостат отвечает командой 0x0A (а не 0x88)
-    if (frame.type == 0x0A) {  // ← ИСПРАВЛЕНО
-      this->on_state(frame.data, size);
-    } else {
-      rka_api::RKAListener<ets_state_t>::on_frame(frame, size);
-    }
-  }
+  // on_frame теперь обрабатывается в базовом классе
+  // on_state переопределяется в ETSClimate
 };
 
 using ETSApiBase = rka_api::RKAApi<ETSVPort>;

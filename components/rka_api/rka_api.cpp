@@ -28,7 +28,10 @@ void RKAListenerBase::on_frame(const rka_any_frame_t &frame, size_t size) {
       this->on_error(*reinterpret_cast<const rka_error_t *>(frame.data));
     }
   } else {
-    ESP_LOGW(TAG, "Unknown packet: %02X: %s", frame.type, format_hex_pretty(frame.data, size).c_str());
+    // Пропускаем 0x0A и 0x88, так как они обрабатываются в RKAListener<>
+    if (frame.type != PACKET_RSP_STATE && frame.type != PACKET_RSP_STATE_ETS) {
+      ESP_LOGW(TAG, "Unknown packet: %02X: %s", frame.type, format_hex_pretty(frame.data, size).c_str());
+    }
   }
 }
 

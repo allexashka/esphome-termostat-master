@@ -50,7 +50,9 @@ template<class rka_state_t> class RKAListener : public RKAListenerBase {
   }
 
   void on_frame(const rka_any_frame_t &frame, size_t size) override {
-    if (frame.type == PACKET_RSP_STATE) {
+    // Обрабатываем как стандартный ответ состояния (0x88),
+    // так и ответ ETS термостата (0x0A)
+    if (frame.type == PACKET_RSP_STATE || frame.type == PACKET_RSP_STATE_ETS) {
       this->on_state(frame.data, size);
     } else {
       RKAListenerBase::on_frame(frame, size);

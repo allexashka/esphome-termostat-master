@@ -62,12 +62,12 @@ enum rka_packet_type_t : uint8_t {
    * Result of PACKET_REQ_STATE.
    * @returns rka_state_t
    */
-  PACKET_RSP_STATE = _PACKET_RSP_CMD_MASK | PACKET_REQ_STATE,
+  PACKET_RSP_STATE = _PACKET_RSP_CMD_MASK | PACKET_REQ_STATE,  // 0x88
 
   /**
    * Result of PACKET_REQ_SET_COMMAND.
    */
-  PACKET_RSP_SET_COMMAND = _PACKET_RSP_CMD_MASK | PACKET_REQ_SET_COMMAND,
+  PACKET_RSP_SET_COMMAND = _PACKET_RSP_CMD_MASK | PACKET_REQ_SET_COMMAND,  // 0x8A
 
   /**
    * Device state command. EWH got it every 30 seconds.
@@ -80,33 +80,16 @@ enum rka_packet_type_t : uint8_t {
    * @returns rka_error_t
    */
   PACKET_CMD_ERROR = 0x05,
+
+  // ============================================================
+  // ДОБАВЛЕНО для ETS термостата
+  // ============================================================
+  /**
+   * Result of PACKET_REQ_STATE for ETS.
+   * ETS термостат отвечает на запрос состояния командой 0x0A.
+   */
+  PACKET_RSP_STATE_ETS = 0x0A,
 };
-
-// // Header for any request or response.
-// struct frame_header_t {
-//   enum : uint8_t { FRAME_MAGIC = 0xAA };
-//   uint8_t magic;
-//   // Size of frame data.
-//   uint8_t size;
-//   rka_packet_type_t type;
-// };
-
-// // Abstract frame with any data.
-// // Usage:
-// //  auto frame = any_frame_t::from(data);
-// struct any_frame_t : frame_header_t {
-//   uint8_t data[sizeof(uint8_t)];
-
-//   /// Check frame is valid with magic and whole frame size (magic + size + data + CRC).
-//   bool is_valid(size_t whole_frame_size) const {
-//     return this->magic == FRAME_MAGIC && whole_frame_size - this->size - sizeof(frame_header_t) == 0;
-//   }
-
-//   /// Cast data pointer to frame pointer.
-//   static const any_frame_t *from(const uint8_t *data) { return reinterpret_cast<const any_frame_t *>(data); }
-
-//   uint8_t crc() const { return this->data[this->size - 1]; }
-// };
 
 // Response for PACKET_CMD_ERROR.
 struct rka_error_t {
