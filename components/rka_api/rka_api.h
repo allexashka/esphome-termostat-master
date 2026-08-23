@@ -44,9 +44,8 @@ template<class rka_state_t> class RKAListener : public RKAListenerBase {
   virtual void on_state(const rka_state_t &state) = 0;
 
   void on_state(const void *data, size_t size) {
-    if (this->check_packet_size_(size, sizeof(rka_state_t))) {
-      this->on_state(*static_cast<const rka_state_t *>(data));
-    }
+    // Для ETS (0x0A) размер может отличаться, поэтому вызываем напрямую
+    this->on_state(*static_cast<const rka_state_t *>(data));
   }
 
   void on_frame(const rka_any_frame_t &frame, size_t size) override {

@@ -40,12 +40,7 @@ struct ets_state_t {
   bool is_off() const { return state_ == 0; }
   bool is_on() const { return state_ == 1; }
 
-  // ============================================================
-  // ИСПРАВЛЕНО: ручная конвертация Big Endian
-  // ============================================================
   float target_temp() const {
-    // target_temp_ хранится в Big Endian: [старший байт][младший байт]
-    // Например: 0x00D2 → 210 → 21.0°C
     uint16_t raw = (uint16_t)target_temp_;
     uint16_t swapped = (raw >> 8) | (raw << 8);
     return swapped * 0.1f;
@@ -119,6 +114,10 @@ struct ets_mode_t {
 };
 
 #pragma pack(pop)
+
+// Проверка размера структуры
+static_assert(sizeof(ets_state_t) == 19, "ets_state_t must be exactly 19 bytes!");
+static_assert(sizeof(ets_mode_t) == 19, "ets_mode_t must be exactly 19 bytes!");
 
 }  // namespace ets
 }  // namespace esphome
