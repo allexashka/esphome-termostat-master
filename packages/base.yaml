@@ -5,8 +5,12 @@ substitutions:
   project_source_refresh: 12h
   node_name: "#"
   friendly_name: $node_name
-  node_add_mac_suffix: "true"
+  node_add_mac_suffix: "false"
 
+  vport_version: "master" #2023.2.0
+  vport_source: github://dentra/esphome-components@$vport_version
+  vport_source_refresh: 1d
+  
 esphome:
   name: $node_name
   friendly_name: $friendly_name
@@ -31,6 +35,9 @@ logger:
   baud_rate: 0
 
 external_components:
+  - source: $vport_source
+    components: [crash_info, etl, otax, vport]
+    refresh: $vport_source_refresh
+
   - source: $project_source
-    components: [vport, rka_api, ets, crash_info, etl, otax]
     refresh: $project_source_refresh
