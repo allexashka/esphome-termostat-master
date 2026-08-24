@@ -21,22 +21,53 @@ enum ets_sens_type_t : uint8_t {
   ST_EBERIE_33KOHM = 5,
 };
 
+// ============================================================
+// Ответ состояния (19 байт)
+// ============================================================
 struct ets_state_t {
-  uint8_t state_;
-  uint8_t unk01{0x7F};
-  int16_t target_temp_;
-  int16_t air_temp_;
-  int16_t floor_temp_;
-  uint16_t unk08{0};
-  uint8_t ctl_type{0x7F};
+  // Байт 0
+  uint8_t state_;          // 00=off, 01=on
+  
+  // Байт 1
+  uint8_t unk01{0x7F};     // всегда 0x7F
+  
+  // Байты 2-3
+  int16_t target_temp_;    // целевая (Big Endian, ×10)
+  
+  // Байты 4-5
+  int16_t air_temp_;       // температура ВОЗДУХА (Big Endian, ×10)
+  
+  // Байты 6-7
+  int16_t floor_temp_;     // температура ПОЛА (Big Endian, ×10)
+  
+  // Байты 8-9
+  uint16_t unk08{0};       // всегда 0x0000
+  
+  // Байт 10
+  uint8_t ctl_type{0x7F};  // тип управления (7F=unchanged)
+  
+  // Байт 11
   ets_sens_type_t sens_type{ST_ELECTROLUX_10KOHM};
-  uint16_t unk0C{0x01C2};
-  uint8_t unk0E{0};
-  uint8_t antifreeze{0};
-  uint8_t unk10{0x7F};
-  uint8_t open_wnd_mode{0};
-  uint8_t chld_lck{0x7F};
+  
+  // Байты 12-13
+  uint16_t unk0C{0x01C2};  // всегда 0x01C2
+  
+  // Байт 14
+  uint8_t unk0E{0};        // всегда 0x00
+  
+  // Байт 15
+  uint8_t antifreeze{0};   // 00=off, 32=on
+  
+  // Байт 16
+  uint8_t unk10{0x7F};     // всегда 0x7F
+  
+  // Байт 17
+  uint8_t open_wnd_mode{0}; // 00=off, 01=on
+  
+  // Байт 18
+  uint8_t chld_lck{0x7F};  // 00=on, 01=off
 
+  // --- Методы ---
   bool is_off() const { return state_ == 0; }
   bool is_on() const { return state_ == 1; }
 
@@ -63,26 +94,61 @@ struct ets_state_t {
   bool is_locked() const { return chld_lck == 0x00; }
 };
 
+// ============================================================
+// Команда изменения состояния (21 байт для отправки)
+// ============================================================
 struct ets_mode_t {
   enum { UNCHANGED = 0x7F };
 
+  // Байт 0
   uint8_t unused0{0x00};
-  uint8_t state_{UNCHANGED};
-  uint8_t unk01{UNCHANGED};
-  int16_t target_temp_;
-  int16_t air_temp_;
-  int16_t floor_temp_;
-  uint16_t unk08{0};
+  
+  // Байт 1
+  uint8_t state_{UNCHANGED};  // 7F=unchanged, 00=off, 01=on
+  
+  // Байт 2
+  uint8_t unk01{UNCHANGED};   // всегда 0x7F
+  
+  // Байты 3-4
+  int16_t target_temp_;       // целевая (Big Endian, ×10)
+  
+  // Байты 5-6
+  int16_t air_temp_;          // воздух (Big Endian, ×10)
+  
+  // Байты 7-8
+  int16_t floor_temp_;        // пол (Big Endian, ×10)
+  
+  // Байты 9-10
+  uint16_t unk08{0};          // всегда 0x0000
+  
+  // Байт 11
   uint8_t ctl_type{UNCHANGED};
+  
+  // Байт 12
   uint8_t sens_type{UNCHANGED};
-  uint16_t unk0C{0x01C2};
-  uint8_t unk0E{0};
-  uint8_t antifreeze{UNCHANGED};
-  uint8_t unk10{UNCHANGED};
-  uint8_t open_wnd_mode{UNCHANGED};
-  uint8_t chld_lck{UNCHANGED};
+  
+  // Байты 13-14
+  uint16_t unk0C{0x01C2};     // всегда 0x01C2
+  
+  // Байт 15
+  uint8_t unk0E{0};           // всегда 0x00
+  
+  // Байт 16
+  uint8_t antifreeze{UNCHANGED};  // 32=on, 00=off
+  
+  // Байт 17
+  uint8_t unk10{UNCHANGED};   // всегда 0x7F
+  
+  // Байт 18
+  uint8_t open_wnd_mode{UNCHANGED};  // 00=off, 01=on
+  
+  // Байт 19
+  uint8_t chld_lck{UNCHANGED};  // 00=on, 01=off
+  
+  // Байт 20
   uint8_t unused1{0x7F};
 
+  // --- Методы ---
   void set_state(bool is_on) { state_ = is_on ? 1 : 0; }
   void set_unchanged_state() { state_ = UNCHANGED; }
 

@@ -1,6 +1,5 @@
 #include "esphome/core/log.h"
 #include "esphome/core/helpers.h"
-
 #include "ets_api.h"
 
 namespace esphome {
@@ -13,13 +12,18 @@ void ETSApi::set_mode(bool *state, float target_temp, float air_temp) const {
     ESP_LOGW(TAG, "Current state has not been received yet");
     return;
   }
+
   ets_mode_t mode;
+  mode.reset();
+
   if (state) {
     mode.set_state(*state);
   }
-  mode.set_target_temp(target_temp);  // ← ИСПРАВЛЕНО
-  mode.set_air_temp(air_temp);        // ← ИСПРАВЛЕНО
+
+  mode.set_target_temp(target_temp);
+  mode.set_air_temp(air_temp);
   mode.unk0C = this->unk0C_;
+
   this->write_st(mode);
 }
 

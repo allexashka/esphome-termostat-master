@@ -1,5 +1,4 @@
 #include "esphome/core/log.h"
-
 #include "ets_climate.h"
 
 namespace esphome {
@@ -45,23 +44,23 @@ void ETSClimate::on_state(const ets_state_t &state) {
   this->api_->init_unk0C(state.unk0C);
 
   // ============================================================
-  // ИСПРАВЛЕНО: ручная конвертация Big Endian
+  // Конвертация Big Endian
   // ============================================================
-  // target_temp_ хранится в Big Endian: [старший байт][младший байт]
-  // Пример: 0x00D2 → 210 → 21.0°C
   auto convert_temp = [](int16_t value) -> float {
     uint16_t raw = (uint16_t)value;
-    uint16_t swapped = (raw >> 8) | (raw << 8);
+    uint16_t swapped = ((raw & 0xFF) << 8) | ((raw >> 8) & 0xFF);
     return swapped * 0.1f;
   };
 
   float target_temp = convert_temp(state.target_temp_);
-  float floor_temp = convert_temp(state.floor_temp_);
-  float air_temp = convert_temp(state.air_temp_);
+  float air_temp = convert_temp(state.air_temp_);      // ← байты 4-5
+  float floor_temp = convert_temp(state.floor_temp_);  // ← байты 6-7
 
+  // ============================================================
   // Отладка
+  // ============================================================
   ESP_LOGI(TAG, "=== on_state called ===");
-  ESP_LOGI(TAG, "  state_: 0x%02X (ВКЛ=%d)", state.state_, state.is_on());
+  ESP_LOGI(TAG, "  state_: 0x%02X (ВКЛ=%d)", state.state_, state.state_ == 0x01);
   ESP_LOGI(TAG, "  target_temp_: raw=0x%04X → %.1f°C", (uint16_t)state.target_temp_, target_temp);
   ESP_LOGI(TAG, "  air_temp_: raw=0x%04X → %.1f°C", (uint16_t)state.air_temp_, air_temp);
   ESP_LOGI(TAG, "  floor_temp_: raw=0x%04X → %.1f°C", (uint16_t)state.floor_temp_, floor_temp);
@@ -70,13 +69,17 @@ void ETSClimate::on_state(const ets_state_t &state) {
   ESP_LOGI(TAG, "  open_wnd_mode: 0x%02X %s", state.open_wnd_mode, state.is_window_open() ? "ВКЛ" : "ВЫКЛ");
   ESP_LOGI(TAG, "  chld_lck: 0x%02X %s", state.chld_lck, state.is_locked() ? "ВКЛ" : "ВЫКЛ");
 
+  // ============================================================
   // Обновляем климат
+  // ============================================================
   this->target_temperature = target_temp;
-  this->current_temperature = floor_temp;  // используем температуру пола как текущую
+  this->current_temperature = air_temp;  // ← текущая = температура ВОЗДУХА!
   this->mode = state.is_off() ? climate::CLIMATE_MODE_OFF : climate::CLIMATE_MODE_HEAT;
   this->publish_state();
 
-  // Обновляем сенсор температуры пола
+  // ============================================================
+  // Обновляем сенсор температуры пола (если есть)
+  // ============================================================
   if (this->floor_temp_) {
     if (floor_temp > -10.0f) {
       this->floor_temp_->publish_state(floor_temp);

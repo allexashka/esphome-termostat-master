@@ -7,8 +7,6 @@
 namespace esphome {
 namespace ets {
 
-// ETSListener теперь ничего не переопределяет,
-// так как rka_api::RKAListener уже обрабатывает 0x0A
 class ETSListener : public rka_api::RKAListener<ets_state_t> {
  public:
   // on_frame теперь обрабатывается в базовом классе
