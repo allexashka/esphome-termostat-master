@@ -73,7 +73,7 @@ void ETSClimate::on_state(const ets_state_t &state) {
   // Обновляем климат
   // ============================================================
   this->target_temperature = target_temp;
-  this->current_temperature = air_temp;  // ← текущая = температура ВОЗДУХА!
+  this->current_temperature = air_temp;  // ← текущая = температура ВОЗДУХА
   this->mode = state.is_off() ? climate::CLIMATE_MODE_OFF : climate::CLIMATE_MODE_HEAT;
   this->publish_state();
 

@@ -3,12 +3,8 @@ substitutions:
   framework_type: esp-idf
 
 esphome:
-  platformio_options:
-    build_flags:
-      - -std=gnu++17
-    build_unflags:
-      - -std=gnu++11
-    lib_ldf_mode: "chain"
+  build_flags:
+    - -std=gnu++17
 
 esp32:
   board: $board

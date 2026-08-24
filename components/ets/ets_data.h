@@ -27,43 +27,43 @@ enum ets_sens_type_t : uint8_t {
 struct ets_state_t {
   // Байт 0
   uint8_t state_;          // 00=off, 01=on
-  
+
   // Байт 1
   uint8_t unk01{0x7F};     // всегда 0x7F
-  
+
   // Байты 2-3
   int16_t target_temp_;    // целевая (Big Endian, ×10)
-  
+
   // Байты 4-5
   int16_t air_temp_;       // температура ВОЗДУХА (Big Endian, ×10)
-  
+
   // Байты 6-7
   int16_t floor_temp_;     // температура ПОЛА (Big Endian, ×10)
-  
+
   // Байты 8-9
   uint16_t unk08{0};       // всегда 0x0000
-  
+
   // Байт 10
   uint8_t ctl_type{0x7F};  // тип управления (7F=unchanged)
-  
+
   // Байт 11
   ets_sens_type_t sens_type{ST_ELECTROLUX_10KOHM};
-  
+
   // Байты 12-13
   uint16_t unk0C{0x01C2};  // всегда 0x01C2
-  
+
   // Байт 14
   uint8_t unk0E{0};        // всегда 0x00
-  
+
   // Байт 15
   uint8_t antifreeze{0};   // 00=off, 32=on
-  
+
   // Байт 16
   uint8_t unk10{0x7F};     // всегда 0x7F
-  
+
   // Байт 17
   uint8_t open_wnd_mode{0}; // 00=off, 01=on
-  
+
   // Байт 18
   uint8_t chld_lck{0x7F};  // 00=on, 01=off
 
@@ -95,58 +95,52 @@ struct ets_state_t {
 };
 
 // ============================================================
-// Команда изменения состояния (21 байт для отправки)
+// Команда изменения состояния (19 байт)
 // ============================================================
 struct ets_mode_t {
   enum { UNCHANGED = 0x7F };
 
-  // Байт 0
-  uint8_t unused0{0x00};
-  
-  // Байт 1
-  uint8_t state_{UNCHANGED};  // 7F=unchanged, 00=off, 01=on
-  
-  // Байт 2
-  uint8_t unk01{UNCHANGED};   // всегда 0x7F
-  
-  // Байты 3-4
-  int16_t target_temp_;       // целевая (Big Endian, ×10)
-  
-  // Байты 5-6
-  int16_t air_temp_;          // воздух (Big Endian, ×10)
-  
-  // Байты 7-8
-  int16_t floor_temp_;        // пол (Big Endian, ×10)
-  
-  // Байты 9-10
-  uint16_t unk08{0};          // всегда 0x0000
-  
-  // Байт 11
+  // Байт 0: состояние (7F=unchanged, 00=off, 01=on)
+  uint8_t state_{UNCHANGED};
+
+  // Байт 1: всегда 0x7F
+  uint8_t unk01{UNCHANGED};
+
+  // Байты 2-3: целевая температура (Big Endian, ×10)
+  int16_t target_temp_;
+
+  // Байты 4-5: всегда 0x0000
+  uint16_t unk04{0};
+
+  // Байты 6-7: температура воздуха (Big Endian, ×10)
+  int16_t air_temp_;
+
+  // Байты 8-9: всегда 0x0000
+  uint16_t unk06{0};
+
+  // Байт 10: тип управления
   uint8_t ctl_type{UNCHANGED};
-  
-  // Байт 12
+
+  // Байт 11: тип датчика
   uint8_t sens_type{UNCHANGED};
-  
-  // Байты 13-14
-  uint16_t unk0C{0x01C2};     // всегда 0x01C2
-  
-  // Байт 15
-  uint8_t unk0E{0};           // всегда 0x00
-  
-  // Байт 16
-  uint8_t antifreeze{UNCHANGED};  // 32=on, 00=off
-  
-  // Байт 17
-  uint8_t unk10{UNCHANGED};   // всегда 0x7F
-  
-  // Байт 18
-  uint8_t open_wnd_mode{UNCHANGED};  // 00=off, 01=on
-  
-  // Байт 19
-  uint8_t chld_lck{UNCHANGED};  // 00=on, 01=off
-  
-  // Байт 20
-  uint8_t unused1{0x7F};
+
+  // Байты 12-13: всегда 0x01C2
+  uint16_t unk0C{0x01C2};
+
+  // Байт 14: всегда 0x00
+  uint8_t unk0E{0};
+
+  // Байт 15: антизамерзание
+  uint8_t antifreeze{UNCHANGED};
+
+  // Байт 16: всегда 0x7F
+  uint8_t unk10{UNCHANGED};
+
+  // Байт 17: открытое окно
+  uint8_t open_wnd_mode{UNCHANGED};
+
+  // Байт 18: блокировка
+  uint8_t chld_lck{UNCHANGED};
 
   // --- Методы ---
   void set_state(bool is_on) { state_ = is_on ? 1 : 0; }
@@ -156,13 +150,10 @@ struct ets_mode_t {
     uint16_t val = (uint16_t)(value * 10);
     target_temp_ = (int16_t)((val >> 8) | (val << 8));
   }
+
   void set_air_temp(float value) {
     uint16_t val = (uint16_t)(value * 10);
     air_temp_ = (int16_t)((val >> 8) | (val << 8));
-  }
-  void set_floor_temp(float value) {
-    uint16_t val = (uint16_t)(value * 10);
-    floor_temp_ = (int16_t)((val >> 8) | (val << 8));
   }
 
   void set_antifreeze(bool on) { antifreeze = on ? 0x32 : 0x00; }
@@ -170,7 +161,6 @@ struct ets_mode_t {
   void set_locked(bool on) { chld_lck = on ? 0x00 : 0x01; }
 
   void reset() {
-    unused0 = 0x00;
     state_ = UNCHANGED;
     unk01 = UNCHANGED;
     ctl_type = UNCHANGED;
@@ -179,14 +169,13 @@ struct ets_mode_t {
     unk10 = UNCHANGED;
     open_wnd_mode = UNCHANGED;
     chld_lck = UNCHANGED;
-    unused1 = 0x7F;
   }
 };
 
 #pragma pack(pop)
 
 static_assert(sizeof(ets_state_t) == 19, "ets_state_t must be exactly 19 bytes!");
-static_assert(sizeof(ets_mode_t) == 21, "ets_mode_t must be exactly 21 bytes!");
+static_assert(sizeof(ets_mode_t) == 19, "ets_mode_t must be exactly 19 bytes!");
 
 }  // namespace ets
 }  // namespace esphome
