@@ -124,7 +124,7 @@ struct ets_mode_t {
   // Байт 11: тип датчика
   uint8_t sens_type{UNCHANGED};
 
-  // Байты 12-13: всегда 0x01C2
+  // Байты 12-13: unk0C (берётся из состояния!)
   uint16_t unk0C{0x01C2};
 
   // Байт 14: всегда 0x00
@@ -143,8 +143,13 @@ struct ets_mode_t {
   uint8_t chld_lck{UNCHANGED};
 
   // --- Методы ---
-  void set_state(bool is_on) { state_ = is_on ? 1 : 0; }
-  void set_unchanged_state() { state_ = UNCHANGED; }
+  void set_state(bool is_on) {
+    state_ = is_on ? 0x01 : 0x00;
+  }
+
+  void set_unchanged_state() {
+    state_ = UNCHANGED;
+  }
 
   void set_target_temp(float value) {
     uint16_t val = (uint16_t)(value * 10);
@@ -156,9 +161,17 @@ struct ets_mode_t {
     air_temp_ = (int16_t)((val >> 8) | (val << 8));
   }
 
-  void set_antifreeze(bool on) { antifreeze = on ? 0x32 : 0x00; }
-  void set_window_open(bool on) { open_wnd_mode = on ? 0x01 : 0x00; }
-  void set_locked(bool on) { chld_lck = on ? 0x00 : 0x01; }
+  void set_antifreeze(bool on) {
+    antifreeze = on ? 0x32 : 0x00;
+  }
+
+  void set_window_open(bool on) {
+    open_wnd_mode = on ? 0x01 : 0x00;
+  }
+
+  void set_locked(bool on) {
+    chld_lck = on ? 0x00 : 0x01;
+  }
 
   void reset() {
     state_ = UNCHANGED;
@@ -169,6 +182,9 @@ struct ets_mode_t {
     unk10 = UNCHANGED;
     open_wnd_mode = UNCHANGED;
     chld_lck = UNCHANGED;
+    unk0E = 0;
+    unk04 = 0;
+    unk06 = 0;
   }
 };
 

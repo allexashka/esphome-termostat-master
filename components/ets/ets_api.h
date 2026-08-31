@@ -9,7 +9,7 @@ namespace ets {
 
 class ETSListener : public rka_api::RKAListener<ets_state_t> {
  public:
-  // on_frame теперь обрабатывается в базовом классе
+  // on_frame обрабатывается в базовом классе
   // on_state переопределяется в ETSClimate
 };
 
@@ -19,7 +19,10 @@ class ETSApi : public ETSApiBase {
  public:
   explicit ETSApi(ETSVPort *vport) : ETSApiBase(vport) {}
 
-  void init_unk0C(uint16_t unk0C) { this->unk0C_ = unk0C; }
+  void init_unk0C(uint16_t unk0C) {
+    this->unk0C_ = unk0C;
+    ESP_LOGD("ets_api", "init_unk0C: 0x%04X", unk0C);
+  }
 
   void set_mode(bool *state, float target_temp, float air_temp) const;
 
