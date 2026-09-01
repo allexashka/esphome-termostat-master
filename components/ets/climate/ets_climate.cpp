@@ -73,7 +73,13 @@ void ETSClimate::on_state(const ets_state_t &state) {
   // Обновляем климат
   // ============================================================
   this->target_temperature = target_temp;
-  this->current_temperature = air_temp;  // ← текущая = температура ВОЗДУХА
+  
+  // ============================================================
+  // ИСПРАВЛЕНО: текущая температура = температура ПОЛА
+  // (потому что термостат передаёт пол, а не воздух)
+  // ============================================================
+  this->current_temperature = floor_temp;  // ← ИСПРАВЛЕНО!
+  
   this->mode = state.is_off() ? climate::CLIMATE_MODE_OFF : climate::CLIMATE_MODE_HEAT;
   this->publish_state();
 
